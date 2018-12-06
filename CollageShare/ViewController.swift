@@ -51,6 +51,27 @@ class ViewController: UIViewController, UIDropInteractionDelegate, UIDragInterac
         return UITargetedDragPreview(view: item.localObject as! UIView)
     }
     
+    //MARK:- Drag Interaction item removal method
+    func dragInteraction(_ interaction: UIDragInteraction, willAnimateLiftWith animator: UIDragAnimating, session: UIDragSession) {
+        
+        //remove the image we're dragging by grabbing it from the session's dragItems, trying to cast it as a UIView and removing it from superview if possible
+        session.items.forEach { (draggedItem) in
+            if let touchedImageView = draggedItem.localObject as? UIView {
+                touchedImageView.removeFromSuperview()
+            }
+        }
+        
+    }
+    
+    //MARK:- Drag cancelled
+    func dragInteraction(_ interaction: UIDragInteraction, item: UIDragItem, willAnimateCancelWith animator: UIDragAnimating) {
+        //put the image back onto the view controller's view if animation is cancelled
+        if let touchedImageView = item.localObject as? UIView {
+            self.view.addSubview(touchedImageView)
+        }
+        //self.view.addSubview(item.localObject as! UIView)
+    }
+    
     //MARK:- Drop delegate method
     func dropInteraction(_ interaction: UIDropInteraction, performDrop session: UIDropSession) {
         //get the image by looking in the session's items array
