@@ -13,12 +13,32 @@ class ViewController: UIViewController, UIDropInteractionDelegate, UIDragInterac
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        view.backgroundColor = .white //AppDelegate window is default black because we constructed it in code, set the color to white at view load
+        navigationItem.title = "Collage Sharing"
+        navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Share", style: .plain, target: self, action: #selector(handleShare))
         
         //MARK:- Drop interaction setup
         view.addInteraction(UIDropInteraction(delegate: self)) //external to app
         view.addInteraction(UIDragInteraction(delegate: self)) //internal to internal
         
     }
+    
+    //MARK:- Sharing methods
+    @objc func handleShare() {
+        //we need to capture the canvas to generate the image
+        
+        //set the context sized to the view's entire frame, render in the context, create image from the context
+        UIGraphicsBeginImageContext(view.frame.size)
+        view.layer.render(in: UIGraphicsGetCurrentContext()!)
+        guard let image = UIGraphicsGetImageFromCurrentImageContext() else { return }
+        UIGraphicsEndImageContext()
+        
+        //share the image view via UIActivityViewController and present it
+        let activityViewController = UIActivityViewController(activityItems: [image], applicationActivities: nil)
+        activityViewController.popoverPresentationController?.barButtonItem = navigationItem.rightBarButtonItem //where to place the popover, basically.
+        present(activityViewController, animated: true, completion: nil)
+    }
+    
     //MARK:- Drag delegate method
     func dragInteraction(_ interaction: UIDragInteraction, itemsForBeginning session: UIDragSession) -> [UIDragItem] {
         
@@ -66,10 +86,10 @@ class ViewController: UIViewController, UIDropInteractionDelegate, UIDragInterac
     //MARK:- Drag cancelled
     func dragInteraction(_ interaction: UIDragInteraction, item: UIDragItem, willAnimateCancelWith animator: UIDragAnimating) {
         //put the image back onto the view controller's view if animation is cancelled
-        if let touchedImageView = item.localObject as? UIView {
-            self.view.addSubview(touchedImageView)
-        }
-        //self.view.addSubview(item.localObject as! UIView)
+//        if let touchedImageView = item.localObject as? UIView {
+//            self.view.addSubview(touchedImageView)
+//        }
+        self.view.addSubview(item.localObject as! UIView)
     }
     
     //MARK:- Drop delegate method
@@ -88,6 +108,13 @@ class ViewController: UIViewController, UIDropInteractionDelegate, UIDragInterac
                 DispatchQueue.main.async {
                     //updating the UI needs to be done on the main thread, of course
                     let imageView = UIImageView(image: draggedImage)
+                    
+                    //optional image styling upon drop
+                    imageView.layer.borderWidth = 3
+                    imageView.layer.borderColor = UIColor.gray.cgColor
+                    imageView.layer.shadowRadius = 5
+                    imageView.layer.shadowOpacity = 0.3
+            
                     imageView.isUserInteractionEnabled = true
                     imageView.frame = CGRect(x: 0, y: 0, width: draggedImage.size.width, height: draggedImage.size.height)
                     self.view.addSubview(imageView)
