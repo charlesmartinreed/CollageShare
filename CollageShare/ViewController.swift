@@ -8,19 +8,50 @@
 
 import UIKit
 
-class ViewController: UIViewController, UIDropInteractionDelegate {
-
+class ViewController: UIViewController, UIDropInteractionDelegate, UIDragInteractionDelegate {
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
         
         //MARK:- Drop interaction setup
-        view.addInteraction(UIDropInteraction(delegate: self))
+        view.addInteraction(UIDropInteraction(delegate: self)) //external to app
+        view.addInteraction(UIDragInteraction(delegate: self)) //internal to internal
+        
+    }
+    //MARK:- Drag delegate method
+    func dragInteraction(_ interaction: UIDragInteraction, itemsForBeginning session: UIDragSession) -> [UIDragItem] {
+        
+        //get item location
+        let touchedPoint = session.location(in: self.view)
+        
+        //hitTest returns the view that was being touched
+        if let touchedImageView = self.view.hitTest(touchedPoint, with: nil) as? UIImageView {
+            
+            //image is interactable because we enable touch interation when capturing the image during drop session
+            if let touchedImage = touchedImageView.image {
+                let itemProvider = NSItemProvider(object: touchedImage) //try to get the item from item provider
+                let dragItem = UIDragItem(itemProvider: itemProvider)
+                
+                //localObject allows you to associate a custom object with the drag item, local to this app only
+                dragItem.localObject = touchedImageView
+                
+                return [dragItem]
+            }
+            
+        }
+        
+        return []
     }
     
-    //MARK:- Drop delegate methods
+    //MARK:- Drag Interaction preview method
+    func dragInteraction(_ interaction: UIDragInteraction, previewForLifting item: UIDragItem, session: UIDragSession) -> UITargetedDragPreview? {
+        
+        //get the view out of the image that you're draging.
+        return UITargetedDragPreview(view: item.localObject as! UIView)
+    }
     
-    
+    //MARK:- Drop delegate method
     func dropInteraction(_ interaction: UIDropInteraction, performDrop session: UIDropSession) {
         //get the image by looking in the session's items array
         for dragItem in session.items {
@@ -36,6 +67,7 @@ class ViewController: UIViewController, UIDropInteractionDelegate {
                 DispatchQueue.main.async {
                     //updating the UI needs to be done on the main thread, of course
                     let imageView = UIImageView(image: draggedImage)
+                    imageView.isUserInteractionEnabled = true
                     imageView.frame = CGRect(x: 0, y: 0, width: draggedImage.size.width, height: draggedImage.size.height)
                     self.view.addSubview(imageView)
                     
